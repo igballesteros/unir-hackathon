@@ -98,6 +98,18 @@ function App() {
     setError(null)
   }
 
+  // Handler para regresar al login al hacer clic en el logo
+  const handleLogoClick = () => {
+    setIsLoggedIn(false)
+    setUserRole(null)
+    setCurrentUserId('')
+    setCurrentUser(null)
+    setSelectedFile(null)
+    setPreview(null)
+    setResult(null)
+    setError(null)
+  }
+
   // Función para marcar donación como entregada
   const handleMarkAsDelivered = (donationId) => {
     setDonations(prevDonations =>
@@ -174,7 +186,10 @@ function App() {
       <div className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 px-4 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo y nombre de la app a la izquierda */}
-          <div className="flex items-center gap-3">
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleLogoClick}
+          >
             <img 
               src="/logo-hackathon.PNG" 
               alt="AMANU Logo" 
@@ -251,7 +266,7 @@ function App() {
                 </div>
                 <div>
                   <p className="text-3xl font-bold text-indigo-600 mb-1">
-                    ${globalTotalDonatedUSD.toFixed(2)}
+                    Por definir
                   </p>
                   <p className="text-sm text-gray-600">
                     Valor estimado donado (USD)
@@ -480,15 +495,15 @@ function App() {
                     <div className="space-y-3 text-gray-700">
                       <p className="text-base">
                         <span className="font-medium">Total donado (estimado):</span>{' '}
-                        ${taxSummary?.totalDonatedUSD.toFixed(2) || '0.00'}
+                        Por definir
                       </p>
                       <p className="text-base">
                         <span className="font-medium">Total ya entregado:</span>{' '}
-                        ${taxSummary?.totalDeliveredUSD.toFixed(2) || '0.00'}
+                        Por definir
                       </p>
                       <p className="text-base">
                         <span className="font-medium">Base referencial para deducción de impuestos:</span>{' '}
-                        ${taxSummary?.potentialDeductionBaseUSD.toFixed(2) || '0.00'}
+                        Por definir
                       </p>
                       <p className="text-xs text-gray-600 mt-4 pt-4 border-t border-green-200">
                         Este monto es solo referencial. En Ecuador, ciertas donaciones a entidades calificadas pueden servir para reducir la base imponible del Impuesto a la Renta, sujeto a límites y requisitos del SRI. Consulta con tu contador o con el SRI para el cálculo real.
