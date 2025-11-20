@@ -1,37 +1,52 @@
-# Demo Hackathon - Asignación de Ropa a Fundaciones
+# AMANU - Camino de Ayuda
 
-Demo funcional que utiliza IA (OpenAI Vision API) para analizar prendas de ropa y asignarlas automáticamente a fundaciones según reglas específicas.
+Plataforma inteligente de donación de ropa que utiliza Inteligencia Artificial para analizar prendas y asignarlas automáticamente a fundaciones según sus necesidades específicas.
 
-## 🚀 Características
+## 🚀 Características Principales
 
-- **Análisis con IA**: Utiliza OpenAI Vision API para determinar:
+- **Análisis con IA**: Utiliza OpenAI Vision API para analizar imágenes de prendas y determinar:
   - Tipo de prenda (camiseta, pantalón, abrigo, etc.)
-  - Grupo (niño/adulto)
-  - Estado aproximado (bueno, usado, etc.)
+  - Grupo objetivo (niño/adulto)
+  - Estado de la prenda (bueno, usado, excelente, etc.)
+  - Clima apropiado (calor, frío, mixto)
 
-- **Asignación Inteligente**: Aplica reglas hardcodeadas para asignar prendas a fundaciones:
-  - **Fundación Costa Viva**: Ropa ligera para niños 8-12 años
-  - **Fundación Abrigo Andino**: Abrigos y suéteres para adultos
-  - **Fundación General**: Para el resto de prendas
+- **Asignación Inteligente**: Sistema de matching que asigna prendas a fundaciones basándose en:
+  - Enfoque climático de la fundación
+  - Grupos objetivo (niños, adultos)
+  - Región geográfica
+
+- **Gestión Multi-rol**: Plataforma con tres tipos de usuarios:
+  - **Donantes**: Suben prendas, ven sus donaciones y beneficios tributarios
+  - **Fundaciones**: Gestionan donaciones recibidas y marcan entregas
+  - **Beneficiarios**: Ven las donaciones que han recibido
+
+- **Seguimiento de Donaciones**: Sistema completo de seguimiento con estados:
+  - Pendiente
+  - En camino
+  - Entregado
+
+- **Beneficios Tributarios**: Cálculo referencial de beneficios tributarios para donantes
 
 ## 📋 Requisitos Previos
 
 - Node.js 18+ instalado
+- npm o yarn
 - Cuenta de OpenAI con API key
 
-## 🔑 Obtención de OpenAI API Key
+## 🔑 Configuración de OpenAI API Key
 
 1. Ve a [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 2. Inicia sesión o crea una cuenta
 3. Haz clic en "Create new secret key"
-4. Copia la API key (solo se muestra una vez, guárdala bien)
-5. Pégala en el archivo `.env` del backend (ver instrucciones abajo)
+4. Copia la API key
+5. Configúrala en el archivo `.env` del backend (ver instrucciones abajo)
 
 ## 🛠️ Instalación
 
-### 1. Clonar/Descargar el proyecto
+### 1. Clonar el repositorio
 
 ```bash
+git clone <repository-url>
 cd unir-hackathon
 ```
 
@@ -45,12 +60,6 @@ npm install
 Crear archivo `.env` en la carpeta `backend/`:
 
 ```bash
-cp .env.example .env
-```
-
-Editar `.env` y agregar tu API key:
-
-```
 OPENAI_API_KEY=sk-tu-api-key-aqui
 PORT=3000
 ```
@@ -85,46 +94,59 @@ La aplicación estará disponible en `http://localhost:5173`
 ## 📖 Uso
 
 1. Abre `http://localhost:5173` en tu navegador
-2. Haz clic en el área de carga y selecciona una imagen de una prenda
-3. Verás un preview de la imagen
-4. Haz clic en "Analizar Prenda"
-5. Espera unos segundos mientras la IA analiza la imagen
-6. Verás el resultado con:
-   - Tipo de prenda detectado
-   - Grupo (niño/adulto)
-   - Estado
-   - Fundación sugerida
+2. Selecciona tu rol (Donante o Fundación)
+3. **Si eres Donante**:
+   - Sube una foto de una prenda
+   - Haz clic en "Analizar Prenda"
+   - Revisa la asignación automática a una fundación
+   - Consulta tus donaciones y beneficios tributarios
+4. **Si eres Fundación**:
+   - Revisa las donaciones asignadas a tu fundación
+   - Marca las donaciones como entregadas cuando las recibas
 
 ## 🏗️ Estructura del Proyecto
 
 ```
 unir-hackathon/
 ├── backend/
-│   ├── server.js          # Servidor Express con endpoint /api/analyze
+│   ├── server.js          # Servidor Express con endpoints API
+│   ├── foundations.js     # Configuración de fundaciones
+│   ├── test-api.js        # Script de pruebas del API
 │   ├── package.json
-│   └── .env               # Variables de entorno (crear manualmente)
+│   └── uploads/           # Directorio temporal para imágenes
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx        # Componente principal
-│   │   ├── main.jsx
-│   │   └── index.css
+│   │   ├── App.jsx        # Componente principal de la aplicación
+│   │   ├── Login.jsx      # Componente de login/selector de rol
+│   │   ├── mockData.js    # Datos mock de usuarios y donaciones
+│   │   ├── taxSummary.js  # Lógica de cálculo tributario
+│   │   ├── main.jsx       # Punto de entrada de React
+│   │   └── index.css      # Estilos globales
+│   ├── public/
+│   │   └── logo-hackathon.PNG
 │   ├── index.html
 │   └── package.json
 └── README.md
 ```
 
-## 🔧 Tecnologías Utilizadas
+## 🔧 Stack Tecnológico
 
-**Backend:**
-- Node.js + Express
-- OpenAI API (Vision)
-- Multer (upload de imágenes)
-- CORS
+### Backend
+- **Node.js** + **Express**: Servidor web y API REST
+- **OpenAI API (GPT-4o)**: Análisis de imágenes con visión artificial
+- **Multer**: Manejo de uploads de archivos
+- **CORS**: Configuración de políticas de origen cruzado
+- **dotenv**: Gestión de variables de entorno
 
-**Frontend:**
-- React + Vite
-- Tailwind CSS
-- Axios
+### Frontend
+- **React 18**: Biblioteca de UI
+- **Vite**: Build tool y dev server
+- **Tailwind CSS**: Framework de estilos utility-first
+- **Axios**: Cliente HTTP para llamadas al API
+
+## 📚 Documentación Completa
+
+Para información detallada sobre funcionalidades, arquitectura y diseño del sistema, consulta el archivo [DOCUMENTACION.md](./DOCUMENTACION.md).
 
 ## ⚠️ Notas Importantes
 
@@ -132,6 +154,7 @@ unir-hackathon/
 - Las imágenes subidas se guardan temporalmente y se eliminan después del análisis
 - Límite de tamaño de imagen: 5MB
 - Formatos soportados: JPEG, JPG, PNG, GIF, WEBP
+- Los datos de usuarios y donaciones son mock (en memoria) para demostración
 
 ## 🐛 Solución de Problemas
 
@@ -149,7 +172,17 @@ unir-hackathon/
 - Verifica que la API key es válida
 - Revisa la consola del backend para más detalles
 
+## 🧪 Pruebas
+
+Para ejecutar las pruebas del API:
+
+```bash
+cd backend
+npm test
+```
+
+Asegúrate de que el servidor esté corriendo antes de ejecutar las pruebas.
+
 ## 📝 Licencia
 
 Este es un proyecto de demo para hackathon.
-

@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { USERS, DONATIONS } from './mockData'
+import { getTaxSummaryForUser } from './taxSummary'
+import Login from './Login'
 
 const API_URL = 'http://localhost:3000/api'
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [userRole, setUserRole] = useState(null)
   const [selectedFile, setSelectedFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -13,6 +17,20 @@ function App() {
   const [currentUserId, setCurrentUserId] = useState(USERS[0]?.id || '')
   const [currentUser, setCurrentUser] = useState(null)
   const [donations, setDonations] = useState(DONATIONS)
+
+  // Handler para el login mock
+  const handleLogin = (role) => {
+    setUserRole(role)
+    setIsLoggedIn(true)
+    // Si es donante, usar el primer usuario donante; si es fundación, el primer usuario fundación
+    if (role === 'donor') {
+      const donor = USERS.find(u => u.role === 'donor')
+      if (donor) setCurrentUserId(donor.id)
+    } else if (role === 'foundation') {
+      const foundation = USERS.find(u => u.role === 'foundation')
+      if (foundation) setCurrentUserId(foundation.id)
+    }
+  }
 
   // Actualizar currentUser cuando cambie currentUserId
   useEffect(() => {
@@ -129,14 +147,47 @@ function App() {
 
   const userDonations = getDonationsForCurrentUser()
 
+  // Calcular resumen tributario para donantes
+  const taxSummary = currentUser?.role === 'donor' 
+    ? getTaxSummaryForUser(currentUserId, donations)
+    : null
+
+  // Calcular resumen de impacto global
+  const totalDonations = donations.length
+  const totalDelivered = donations.filter(d => d.status === 'entregado').length
+  // Solo incluir donaciones con valor revisado por experto
+  const globalTotalDonatedUSD = donations
+    .filter(donation => donation.estimatedValueUSD != null && donation.estimatedValueUSD > 0)
+    .reduce((sum, donation) => {
+      const value = donation.estimatedValueUSD || 0
+      return sum + value
+    }, 0)
+
+  // Si no está logueado, mostrar la página de login
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Top Bar Fija */}
       <div className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 px-4 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Nombre de la app a la izquierda */}
-          <div className="text-2xl font-bold text-indigo-600">
-            RopaConSentido
+          {/* Logo y nombre de la app a la izquierda */}
+          <div className="flex items-center gap-3">
+            <img 
+              src="/logo-hackathon.PNG" 
+              alt="AMANU Logo" 
+              className="h-12 w-auto"
+            />
+            <div className="flex flex-col">
+              <div className="text-2xl font-bold text-gray-800 uppercase">
+                AMANU
+              </div>
+              <div className="text-xs font-light text-gray-600 uppercase">
+                Camino de Ayuda
+              </div>
+            </div>
           </div>
           
           {/* Selector de usuario a la derecha */}
@@ -150,7 +201,7 @@ function App() {
               onChange={handleUserChange}
               className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer"
             >
-              {USERS.map((user) => (
+              {USERS.filter((user) => user.role === userRole).map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name}
                 </option>
@@ -175,6 +226,39 @@ function App() {
                 : 'Vista de beneficiario - Donaciones entregadas'
               }
             </p>
+
+            {/* Resumen de Impacto Global */}
+            <div className="bg-indigo-50 rounded-lg p-6 border border-indigo-200 mb-8">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                Resumen de Impacto
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-3xl font-bold text-indigo-600 mb-1">
+                    {totalDonations}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Prendas donadas
+                  </p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-indigo-600 mb-1">
+                    {totalDelivered}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Prendas entregadas
+                  </p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-indigo-600 mb-1">
+                    ${globalTotalDonatedUSD.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Valor estimado donado (USD)
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* ROL: DONOR - Mostrar uploader y donaciones */}
             {currentUser?.role === 'donor' && (
@@ -318,6 +402,14 @@ function App() {
                               {result.estado}
                             </p>
                           </div>
+                          {result.climate && (
+                            <div>
+                              <span className="text-sm text-gray-500">Clima:</span>
+                              <p className="text-lg font-medium text-gray-800 capitalize">
+                                {result.climate}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -330,11 +422,41 @@ function App() {
                           <p className="text-2xl font-bold text-indigo-800">
                             {result.fundacion.nombre}
                           </p>
-                          <p className="text-sm text-indigo-600">
-                            {result.fundacion.descripcion}
-                          </p>
+                          {result.fundacion.reason && (
+                            <p className="text-sm text-indigo-600">
+                              {result.fundacion.reason}
+                            </p>
+                          )}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Valor de Donación Pendiente */}
+                    <div className="bg-yellow-50 rounded-lg p-6 border-2 border-yellow-200 mt-6">
+                      <h3 className="text-lg font-semibold text-yellow-700 mb-2">
+                        Valor de Donación
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5 text-yellow-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          />
+                        </svg>
+                        <p className="text-base font-medium text-yellow-800">
+                          Este valor está pendiente y será revisado por un experto
+                        </p>
+                      </div>
+                      <p className="text-sm text-yellow-700 mt-2">
+                        Un experto evaluará la prenda y determinará el valor estimado de la donación.
+                      </p>
                     </div>
 
                     {/* Reset Button */}
@@ -349,8 +471,34 @@ function App() {
                   </div>
                 )}
 
-                {/* Sección: Tus donaciones */}
+                {/* Tarjeta de Beneficio Tributario Referencial */}
                 <div className="mt-12 border-t pt-8">
+                  <div className="bg-green-50 rounded-lg p-6 border border-green-200 mb-8">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">
+                      Beneficio tributario referencial
+                    </h2>
+                    <div className="space-y-3 text-gray-700">
+                      <p className="text-base">
+                        <span className="font-medium">Total donado (estimado):</span>{' '}
+                        ${taxSummary?.totalDonatedUSD.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-base">
+                        <span className="font-medium">Total ya entregado:</span>{' '}
+                        ${taxSummary?.totalDeliveredUSD.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-base">
+                        <span className="font-medium">Base referencial para deducción de impuestos:</span>{' '}
+                        ${taxSummary?.potentialDeductionBaseUSD.toFixed(2) || '0.00'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-4 pt-4 border-t border-green-200">
+                        Este monto es solo referencial. En Ecuador, ciertas donaciones a entidades calificadas pueden servir para reducir la base imponible del Impuesto a la Renta, sujeto a límites y requisitos del SRI. Consulta con tu contador o con el SRI para el cálculo real.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sección: Tus donaciones */}
+                <div className="mt-8">
                   <h2 className="text-2xl font-bold text-gray-800 mb-6">
                     Tus donaciones
                   </h2>
@@ -386,6 +534,18 @@ function App() {
                                   }`}>
                                     {getStatusText(donation.status)}
                                   </span>
+                                </p>
+                                <p>
+                                  <span className="font-medium">Valor de donación:</span>{' '}
+                                  {donation.estimatedValueUSD ? (
+                                    <span className="text-green-700 font-semibold">
+                                      ${donation.estimatedValueUSD.toFixed(2)} USD
+                                    </span>
+                                  ) : (
+                                    <span className="text-yellow-700 italic">
+                                      Pendiente de revisión por un experto
+                                    </span>
+                                  )}
                                 </p>
                                 {donation.beneficiaryName && (
                                   <p>
@@ -442,6 +602,18 @@ function App() {
                                 }`}>
                                   {getStatusText(donation.status)}
                                 </span>
+                              </p>
+                              <p>
+                                <span className="font-medium">Valor de donación:</span>{' '}
+                                {donation.estimatedValueUSD ? (
+                                  <span className="text-green-700 font-semibold">
+                                    ${donation.estimatedValueUSD.toFixed(2)} USD
+                                  </span>
+                                ) : (
+                                  <span className="text-yellow-700 italic">
+                                    Pendiente de revisión por un experto
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -510,6 +682,18 @@ function App() {
                             }`}>
                               {getStatusText(donation.status)}
                             </span>
+                          </p>
+                          <p>
+                            <span className="font-medium">Valor de donación:</span>{' '}
+                            {donation.estimatedValueUSD ? (
+                              <span className="text-green-700 font-semibold">
+                                ${donation.estimatedValueUSD.toFixed(2)} USD
+                              </span>
+                            ) : (
+                              <span className="text-yellow-700 italic">
+                                Pendiente de revisión por un experto
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
